@@ -82,6 +82,12 @@ Configure various UI related things
   ;(setq display-time-24hr-format t)
   (display-time)
 
+  ;; Diminish modes from modeline
+  (use-package diminish
+    :ensure t
+    :config
+    (diminish 'jiggle-mode))
+
   ;; Dont blink cursor
   (blink-cursor-mode 0)
 
@@ -208,6 +214,10 @@ Configure various UI related things
                                 (when (not (or (derived-mode-p 'markdown-mode)))
                                   (delete-trailing-whitespace))))
 #+END_SRC
+
+#+RESULTS:
+| lambda | nil | (when (not (or (derived-mode-p (quote markdown-mode)))) (delete-trailing-whitespace)) |
+
 * General packages
 
 #+BEGIN_SRC emacs-lisp
@@ -520,15 +530,29 @@ Configure various UI related things
     (setq magit-diff-options '("-b")) ; ignore whitespace
     )
 
-  ;; Kill magit buffers when done
-  (defun mu-magit-kill-buffers ()
-    "Restore window configuration and kill all Magit buffers."
-    (interactive)
-    (let ((buffers (magit-mode-get-buffers)))
-      (magit-restore-window-configuration)
-      (mapc #'kill-buffer buffers)))
+  ;; ;; Kill magit buffers when done
+  ;; (defun mu-magit-kill-buffers ()
+  ;;   "Restore window configuration and kill all Magit buffers."
+  ;;   (interactive)
+  ;;   (let ((buffers (magit-mode-get-buffers)))
+  ;;     (magit-restore-window-configuration)
+  ;;     (mapc #'kill-buffer buffers)))
 
-  (bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
+  ;; (bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
+  (defun kill-magit-diff-buffer-in-current-repo (&rest _)
+    "Delete the magit-diff buffer related to the current repo"
+    (let ((magit-diff-buffer-in-current-repo
+           (magit-mode-get-buffer 'magit-diff-mode)))
+      (kill-buffer magit-diff-buffer-in-current-repo)))
+  ;;
+  ;; When 'C-c C-c' is pressed in the magit commit message buffer,
+  ;; delete the magit-diff buffer related to the current repo.
+  ;;
+  (add-hook 'git-commit-setup-hook
+            (lambda ()
+              (add-hook 'with-editor-post-finish-hook
+                        #'kill-magit-diff-buffer-in-current-repo
+                        nil t))) ; the t is important
 #+END_SRC
 
 #+RESULTS:
