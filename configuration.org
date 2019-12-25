@@ -70,23 +70,17 @@ Configure various UI related things
   ;(setq default-frame-alist '((font . "Iosevka-14")))
   (setq default-frame-alist '((font . "Office Code Pro D")))
 
-  ;; Powerline
-  (use-package powerline
+  ;; Configure mode-line
+  (use-package smart-mode-line
     :ensure t
-    :config
-    (powerline-default-theme)
-    )
+    :init
+    (sml/setup)
+  )
 
   ;; Display time on mode line
   ;(display-time-mode 1)
   ;(setq display-time-24hr-format t)
   (display-time)
-
-  ;; Diminish modes from modeline
-  (use-package diminish
-    :ensure t
-    :config
-    (diminish 'jiggle-mode))
 
   ;; Dont blink cursor
   (blink-cursor-mode 0)
