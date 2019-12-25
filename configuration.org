@@ -1,0 +1,1095 @@
+* Configuration for use-package
+
+Ensure that use-package installs packages if not already installed. Always compile and use the newest package available.
+
+#+BEGIN_SRC emacs-lisp
+  ;; Speed up bootstrapping
+  (setq gc-cons-threshold 402653184
+        gc-cons-percentage 0.6)
+  (add-hook 'after-init-hook `(lambda ()
+                                (setq gc-cons-threshold 800000
+                                      gc-cons-percentage 0.1)
+                                (garbage-collect)) t)
+
+  ;; use-package
+  ;; ;; Bootstrap `use-package'
+  ;; (setq-default use-package-always-defer t ; Always defer load package to speed up startup time
+  ;;               use-package-verbose nil ; Don't report loading details
+  ;;               use-package-expand-minimally t  ; make the expanded code as minimal as possible
+  ;;               use-package-enable-imenu-support t) ; Let imenu finds use-package definitions
+
+  (require 'use-package-ensure)
+  (setq use-package-always-ensure t)
+
+  (use-package auto-compile
+    :config
+    (auto-compile-on-load-mode))
+
+  (setq load-prefer-newer t)
+
+#+END_SRC
+
+Configure various UI related things
+* General configuration
+
+#+BEGIN_SRC emacs-lisp
+  ;; Ensure environment variables inside Emacs look the same as in the user's shell
+  (use-package exec-path-from-shell
+    :ensure t
+    :if (memq window-system '(maf ns x))
+    :config
+    (exec-path-from-shell-initialize))
+
+  ;; Garbage collection: Allow 20mb of memory before calling gc
+  ;(setq gc-cons-threshold 20000000)
+
+  ;; Mac configuration: use only left option as meta-key
+  ;(setq mac-right-option-modifier -1)
+  (setq mac-option-modifier nil
+        mac-command-modifier 'meta
+        x-select-enable-clipboard t)
+
+  ;; Inhibit startup messages
+  (setq inhibit-startup-message t)
+  (setq inhibit-startup-echo-area-message t)
+  (setq initial-scratch-message nil)
+
+  ;; Turn off mouse interface early in startup to avoid momentary display
+  (if (fboundp 'menu-bar-mode) (menu-bar-mode -1))
+  (if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
+  (if (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
+
+  ;; Zenburn theme
+  (use-package zenburn-theme
+  :ensure t
+  :config (load-theme 'zenburn t))
+
+  (set-face-attribute 'region nil :background "#666") ;; Marked region to more visible color
+
+  ;; Change default font
+  ;(setq default-frame-alist '((font . "Iosevka-14")))
+  (setq default-frame-alist '((font . "Office Code Pro D")))
+
+  ;; Powerline
+  (use-package powerline
+    :ensure t
+    :config
+    (powerline-default-theme)
+    )
+
+  ;; Display time on mode line
+  ;(display-time-mode 1)
+  ;(setq display-time-24hr-format t)
+  (display-time)
+
+  ;; Dont blink cursor
+  (blink-cursor-mode 0)
+
+  ;; Beacon makes sure you don’t lose track of your cursor when jumping around a buffer.
+  (use-package beacon
+    :defer 4
+    :diminish eacon-mode
+    :custom
+    (beacon-push-mark 10)
+    :config
+    (beacon-mode +1))
+
+  ;; When you perform a problematic operation, flash the screen instead of ringing the terminal bell
+  (setq visible-bell t)
+
+  ;; Warn when opening files larger than 100mb
+  (setq-default large-file-warning-threshold 100000000)
+
+  ;; Sentences have one space after a period
+  (setq sentence-end-double-space nil)
+
+  ;; Ask y/n
+  (fset 'yes-or-no-p 'y-or-n-p)
+
+  ;; When something changes a file, automatically refresh the buffer containing that file so they can’t get out of sync
+  (global-auto-revert-mode 1)
+  (add-hook 'dired-mode-hook 'auto-revert-mode)
+  (setq revert-without-query '("\\.pdf"))
+
+  ;; Store all backup and autosave files in the tmp dir
+  (setq backup-directory-alist '(("." . "~/.emacs-backups")))
+  ;(setq auto-save-file-name-transforms '(("." . "~/.emacs-backups")))
+
+  ;; Remember the cursor position of files when reopening them
+  (save-place-mode t)
+
+  ;; Highlight matching parenthesis
+  (show-paren-mode t)
+
+  ;; Buffer title
+  ;(setq frame-title-format '((:eval (projectile-project-name))))
+
+  ;; Highlight current line
+  (global-hl-line-mode)
+
+  ;; Replace selected region
+  (delete-selection-mode 1)
+
+  ;; When opening a file, always follow symlinks
+  (setq vc-follow-symlinks t)
+
+  ;; Default line length to 80 and wrap lines
+  (setq-default fill-column 80)
+  (global-visual-line-mode 1)
+
+  ;; Truncate long lines
+  (setq-default truncate-lines t)
+
+  ;; Automatic line breaks
+  (add-hook 'text-mode-hook 'auto-fill-mode)
+  (add-hook 'org-mode-hook 'auto-fill-mode)
+
+  ;; 80 column marker
+  (require 'whitespace)
+  (setq whitespace-line-column 80) ;; limit line length
+  (setq whitespace-style '(face lines-tail))
+  (add-hook 'ess-mode-hook 'whitespace-mode)
+
+  ;; User name
+  (setq-default
+  user-mail-address "mikko.nurminen@utu.fi"
+  user-full-name "Mikko Nurminen")
+
+  ;; Comment or uncomment a region by hitting M-;
+  (global-set-key (kbd "M-;") 'comment-or-uncomment-region)
+
+  ;; Don't use tabs to indent and reduce indentation to 2 char
+  (setq-default indent-tabs-mode nil)
+  (setq-default tab-width 2)
+
+  ;; Show column numbers and line numbers
+  (setq-default column-number-mode t)
+  (global-display-line-numbers-mode)
+
+  ;; Newline at end of file
+  ;require-final-newline t
+
+  ;; Don't create lockfiles
+  (setq-default create-lockfiles nil)
+
+  ;; Function for transposing horizontal split to vertical
+  (defun toggle-window-split ()
+    (interactive)
+    (if (= (count-windows) 2)
+        (let* ((this-win-buffer (window-buffer))
+           (next-win-buffer (window-buffer (next-window)))
+           (this-win-edges (window-edges (selected-window)))
+           (next-win-edges (window-edges (next-window)))
+           (this-win-2nd (not (and (<= (car this-win-edges)
+                       (car next-win-edges))
+                       (<= (cadr this-win-edges)
+                       (cadr next-win-edges)))))
+           (splitter
+            (if (= (car this-win-edges)
+               (car (window-edges (next-window))))
+            'split-window-horizontally
+          'split-window-vertically)))
+      (delete-other-windows)
+      (let ((first-win (selected-window)))
+        (funcall splitter)
+        (if this-win-2nd (other-window 1))
+        (set-window-buffer (selected-window) this-win-buffer)
+        (set-window-buffer (next-window) next-win-buffer)
+        (select-window first-win)
+        (if this-win-2nd (other-window 1))))))
+
+  (global-set-key (kbd "C-x |") 'toggle-window-split)
+
+  ;; Set Monday as the first day of the week, and set my location.
+  (setq calendar-week-start-day 1)
+
+  ;; Delete trailing whitespace in all modes. Except when editing Markdown, because it uses two trailing blanks as a signal to create a line break.
+  (add-hook 'before-save-hook '(lambda()
+                                (when (not (or (derived-mode-p 'markdown-mode)))
+                                  (delete-trailing-whitespace))))
+#+END_SRC
+* General packages
+
+#+BEGIN_SRC emacs-lisp
+
+  ;; which-key displays available keybindings
+  (use-package which-key
+    :ensure t
+    :defer 3
+    :config (which-key-mode))
+
+  ;; Browse kill-ringin
+  (use-package browse-kill-ring
+    :ensure t
+    :defer 4
+    :bind ("M-y" . browse-kill-ring))
+
+  ;; Company mode everywhere
+  (use-package company
+    :defer 3)
+  (add-hook 'after-init-hook 'global-company-mode)
+
+  ;; Flycheck for syntax-checking
+  (use-package flycheck
+    :ensure t
+    :defer 5
+    :init (global-flycheck-mode))
+
+  ;; Flyspell for spell checking
+  (use-package flyspell
+    :ensure t
+    :config
+    (progn
+      (setq ispell-program-name "aspell")
+      (setq ispell-list-command "--list") ;; run flyspell with aspell, not ispell
+      )
+    (add-hook 'text-mode-hook 'turn-on-auto-fill)
+    (add-hook 'org-mode-hook 'flyspell-mode)
+    (add-hook 'gfm-mode-hook 'flyspell-mode)
+    (add-hook 'markdown-mode-hook 'flyspell-mode)
+    (eval-after-load "flyspell"
+      '(progn
+         (define-key flyspell-mouse-map [down-mouse-3] #'flyspell-correct-word)
+         (define-key flyspell-mouse-map [mouse-3] #'undefined))))
+
+  ;; This packages tries to smartly go to definition leveraging several methods to do so. If one method fails, this package will go on to the next one, eventually falling back to dumb-jump.
+  ;; (use-package smart-jump
+  ;;   :defer 5
+  ;;   :config
+  ;;   (smart-jump-setup-default-registers))
+
+  (use-package dumb-jump
+    :bind (("M-g o" . dumb-jump-go-other-window)
+           ("M-g j" . dumb-jump-go)
+           ("M-g i" . dumb-jump-go-prompt)
+           ("M-g x" . dumb-jump-go-prefer-external)
+           ("M-g z" . dumb-jump-go-prefer-external-other-window))
+    :config (setq dumb-jump-selector 'ivy) ;; (setq dumb-jump-selector 'helm)
+    :init (dumb-jump-mode)
+    :ensure)
+
+  ;; Export to html
+  (use-package htmlize
+    :ensure t
+    :defer 6)
+
+  ;; Ido for interactive completion
+  (use-package ido
+    :init
+    (ido-mode 1)
+    (ido-everywhere t)
+    (setq ido-enable-flex-matching t))
+
+  ;; Display ido results vertically, rather than horizontally
+  (setq ido-decorations (quote ("\n-> " "" "\n   " "\n   ..." "[" "]" " [No match]" " [Matched]" " [Not readable]" " [Too big]" " [Confirm]")))
+  (defun ido-disable-line-truncation () (set (make-local-variable 'truncate-lines) nil))
+  (add-hook 'ido-minibuffer-setup-hook 'ido-disable-line-truncation)
+  (defun ido-define-keys () ;; C-n/p is more intuitive in vertical layout
+    (define-key ido-completion-map (kbd "C-n") 'ido-next-match)
+    (define-key ido-completion-map (kbd "C-p") 'ido-prev-match))
+  (add-hook 'ido-setup-hook 'ido-define-keys)
+
+  ;; Ivy/Swiper/Counsel. Overlaps in functionality with ido, but ido works better in pdf-tools.
+  (use-package ivy
+    :ensure t
+    :diminish
+    :bind (("C-c C-r" . ivy-resume)
+           ("C-x B" . ivy-switch-buffer-other-window))
+    :custom
+    (ivy-count-format "(%d/%d) ")
+    (ivy-use-virtual-buffers t)
+    :config (ivy-mode))
+
+  (use-package ivy-rich
+    :ensure t
+    :preface
+    (defun ivy-rich-switch-buffer-icon (candidate)
+      "Returns an icon for the candidate out of `all-the-icons'."
+      (with-current-buffer
+          (get-buffer candidate)
+        (let ((icon (all-the-icons-icon-for-mode major-mode :height 0.9)))
+          (if (symbolp icon)
+              (all-the-icons-icon-for-mode 'fundamental-mode :height 0.9)
+            icon))))
+    :config
+    (setq ivy-rich--display-transformers-list
+    '(ivy-switch-buffer
+      (:columns
+       ((ivy-rich-switch-buffer-icon (:width 2))
+        (ivy-rich-candidate (:width 30))  ; return the candidate itself
+        (ivy-rich-switch-buffer-size (:width 7))  ; return the buffer size
+        (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right)); return the buffer indicators
+        (ivy-rich-switch-buffer-major-mode (:width 12 :face warning))          ; return the major mode info
+        (ivy-rich-switch-buffer-project (:width 15 :face success))             ; return project name using `projectile'
+        (ivy-rich-switch-buffer-path (:width (lambda (x) (ivy-rich-switch-buffer-shorten-path x (ivy-rich-minibuffer-width 0.3))))))  ; return file path relative to project root or `default-directory' if project is nil
+       :predicate
+       (lambda (cand) (get-buffer cand)))
+      counsel-M-x
+      (:columns
+       ((counsel-M-x-transformer (:width 40))  ; thr original transformer
+        (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))  ; return the docstring of the command
+      counsel-describe-function
+      (:columns
+       ((counsel-describe-function-transformer (:width 40))  ; the original transformer
+        (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))  ; return the docstring of the function
+      counsel-describe-variable
+      (:columns
+       ((counsel-describe-variable-transformer (:width 40))  ; the original transformer
+        (ivy-rich-counsel-variable-docstring (:face font-lock-doc-face))))  ; return the docstring of the variable
+      counsel-recentf
+      (:columns
+       ((ivy-rich-candidate (:width 0.8)) ; return the candidate itself
+        (ivy-rich-file-last-modified-time (:face font-lock-comment-face)))))) ; return the last modified time of the file
+    (setq ivy-virtual-abbreviate 'full
+          ivy-rich-path-style 'abbrev
+          ivy-rich-switch-buffer-align-virtual-buffer t)
+    (ivy-rich-mode 1))
+
+  (use-package counsel
+    :after ivy
+    :config (counsel-mode)
+    :bind (("C-r" . counsel-minibuffer-history))
+    )
+
+  (use-package swiper
+    :after ivy
+    :bind (("C-s" . swiper)
+           ;("C-r" . swiper)
+           ("C-M-s" . swiper-all)
+           ("M-s m" . swiper-multi)
+           ("M-s s" . swiper-thing-at-point)))
+
+                                          ;(add-hook 'pdf-view-mode-hook '(lambda()
+                                          ;                                (define-key pdf-view-mode-map "C-s" 'isearch-forward)))
+
+  ;; Icons (need to use M-x all-the-icons-install-fonts first time)
+  (use-package all-the-icons
+    :ensure t
+    :if
+    (when (not (member "all-the-icons" (font-family-list)))
+      (all-the-icons-install-fonts t)))
+
+  ;; all-the-icons integration with ivy
+  (use-package all-the-icons-ivy
+    :ensure t
+    :after (all-the-icons ivy)
+    :custom
+    (all-the-icons-ivy-buffer-commands '(ivy-switch-buffer-other-window))
+    :config
+    (add-to-list 'all-the-icons-ivy-file-commands 'counsel-dired-jump)
+    (add-to-list 'all-the-icons-ivy-file-commands 'counsel-find-library)
+    (add-to-list 'all-the-icons-ivy-file-commands 'counsel-projectile-find-dir)
+    (all-the-icons-ivy-setup))
+
+
+  ;; Automate parenthesis and quick movements
+  ;; Cheat sheet: https://gist.github.com/pvik/8eb5755cc34da0226e3fc23a320a3c95
+  ;; And this tutorial: https://ebzzry.io/en/emacs-pairs/
+  (use-package smartparens
+    :ensure t
+    :defer 5
+    :bind (:map smartparens-mode-map
+                ("C-M-ö" . sp-unwrap-sexp)
+                ("C-M-ä" . sp-backward-unwrap-sexp)
+                ("C-M-k" . sp-kill-sexp)
+                ("C-M-a" . sp-beginning-of-sexp)
+                ("C-M-e" . sp-end-of-sexp)
+                ("C-M-f" . sp-forward-sexp)
+                ("C-M-b" . sp-backward-sexp)
+                ;("C-M-n" . sp-next-sexp)
+                ;("C-M-p" . sp-previous-sexp)
+                ("C-M-Ö" . sp-forward-slurp-sexp)
+                ("C-M-Ä" . sp-forward-barf-sexp)
+  )
+    :config (progn (show-smartparens-global-mode)))
+
+  (add-hook 'prog-mode-hook 'turn-on-smartparens-strict-mode)
+  (add-hook 'markdown-mode-hook 'turn-on-smartparens-strict-mode)
+  (add-hook 'ess-mode-hook 'turn-on-smartparens-strict-mode)
+  (add-hook 'matlab-mode-hook #'smartparens-mode)
+
+  ;; Expand region
+  (use-package expand-region
+    :ensure t
+    :bind ("C-=" . er/expand-region))
+
+  ;; Highlights recently copied/pasted text.
+  (use-package volatile-highlights
+    :defer 5
+    :diminish volatile-highlights-mode
+    :config
+    (volatile-highlights-mode +1))
+
+  ;; Highlight same symbols
+  (use-package highlight-symbol
+    :ensure t
+    ;; :bind
+    ;; (("M-p" . highlight-symbol-prev)
+    ;;  ("M-n" . highlight-symbol-next))
+    :config
+    (set-face-attribute 'highlight-symbol-face nil
+                        :background "#4f4f4f"
+                        :foreground "#bfb43b")
+    (setq highlight-symbol-idle-delay 0.2)
+    (add-hook 'prog-mode-hook 'highlight-symbol-mode)
+    (add-hook 'prog-mode-hook #'highlight-symbol-nav-mode)
+    )
+
+  ;; Highlight parentheses according to depth
+  (use-package rainbow-delimiters
+    :ensure t
+    :config
+    (add-hook 'ess-mode-hook 'rainbow-delimiters-mode)
+    (add-hook 'emacs-lisp-mode-hook 'rainbow-delimiters-mode))
+
+  ;; Shift-arrow to change window
+  (windmove-default-keybindings)
+
+  ;; Restore window configuration with winner-mode
+  (use-package winner
+    :defer 1
+    :config
+    (winner-mode 1))
+
+  ;; Define word
+  (use-package define-word
+    :ensure t
+    :defer 8)
+
+  ;; Search engines
+  (use-package engine-mode
+    :config (engine-mode t))
+
+  (defengine duckduckgo
+    "https://duckduckgo.com/?q=%s"
+    :keybinding "d")
+
+  ;; Finance accounting
+  (use-package hledger-mode
+    :ensure t
+    :defer 8
+    :mode ("\\.journal\\'" "\\.hledger\\'")
+    :bind (("C-c j" . hledger-run-command)
+           :map hledger-mode-map
+           ("C-c e" . hledger-jentry)
+           ("M-p" . hledger/prev-entry)
+           ("M-n" . hledger/next-entry))
+    :init (setq hledger-jfile "~/Dropbox/Org/finances.journal")
+    :config
+    (add-to-list 'company-backends 'hledger-company))
+
+  ;; Colors for eshell using xterm-color
+  (use-package xterm-color
+    :ensure t)
+
+  (defun pvj/eshell-clear-buffer ()
+    "Clearing the buffer ensures that the prompt is rendered using the desired faces."
+    (interactive)
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (eshell-send-input)))
+
+  ;; Coloring output
+  (add-hook 'eshell-mode-hook
+            (lambda () (progn
+                         (beacon-mode -1)
+                         (setq xterm-color-preserve-properties t)
+                         (setenv "TERM" "xterm-256color")
+                         ;; Clearing the buffer ensures that the prompt is rendered
+                         ;; using the desired faces
+                         (pvj/eshell-clear-buffer))))
+
+  (require 'esh-mode)
+  (add-to-list 'eshell-preoutput-filter-functions 'xterm-color-filter)
+
+  (setq eshell-output-filter-functions
+        (remove 'eshell-handle-ansi-color eshell-output-filter-functions))
+#+END_SRC
+
+#+RESULTS:
+| eshell-postoutput-scroll-to-bottom | eshell-handle-control-codes | eshell-watch-for-password-prompt |
+
+* Magit
+
+#+BEGIN_SRC emacs-lisp
+  (use-package magit
+    :bind
+    ("C-x g" . magit-status)
+    :config
+    (setq git-commit-summary-max-length 50)
+    (setq magit-diff-options '("-b")) ; ignore whitespace
+    )
+#+END_SRC
+* PDF
+
+#+BEGIN_SRC emacs-lisp
+  ;; pdf-tools to replace DocView
+  (use-package pdf-tools
+    :ensure t
+    :mode ("\\.pdf\\'" . pdf-view-mode)
+    :bind ("C-c C-g" . pdf-sync-forward-search)
+    :bind (:map pdf-view-mode-map
+                ("j" . image-next-line)
+                ("k" . image-previous-line)
+                ("l" . image-forward-hscroll)
+                ("h" . image-backward-hscroll)
+                ("G" . pdf-view-last-page))
+    :config
+    (custom-set-variables
+     '(pdf-tools-handle-upgrades nil)) ; Use brew upgrade pdf-tools instead.
+    (setq pdf-info-epdfinfo-program "/usr/local/bin/epdfinfo")
+    (setq-default pdf-view-display-size 'fit-page)
+    (setq pdf-annot-activate-created-annotations t)
+    (add-hook 'pdf-view-mode-hook (lambda () (cua-mode 0))) ;; turn off cua so copy works
+    (setq pdf-view-resize-factor 1.1) ;; More fine grained zooming
+    (setq pdf-view-use-scaling t)
+    (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+    (define-key pdf-view-mode-map (kbd "h") 'pdf-annot-add-highlight-markup-annotation)
+    (define-key pdf-view-mode-map (kbd "t") 'pdf-annot-add-text-annotation)
+    (define-key pdf-view-mode-map (kbd "D") 'pdf-annot-delete)
+    (pdf-tools-install))
+  (add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1))) ;; linum-mode may slow pdf viewing
+  ; auto-revert currently does not work
+  ;(add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
+
+  ;;org-mode pdf-tools
+  (use-package org-pdfview
+    :ensure t
+    :defer 6
+    :config
+    (add-to-list 'org-file-apps '("\\.pdf\\'" . (lambda (file link)
+                                                (org-pdfview-open link)))))
+
+  ;; Save the pdf position
+  (use-package pdf-view-restore
+    :after pdf-tools
+    :config
+    (add-hook 'pdf-view-mode-hook 'pdf-view-restore-mode))
+
+
+
+#+END_SRC
+
+* Org-mode
+
+#+BEGIN_SRC emacs-lisp
+
+  ;; Pretty bullets
+  (use-package org-bullets
+    :ensure t
+    :init
+    (add-hook 'org-mode-hook 'org-bullets-mode))
+
+  ;; Use syntax highlighting in source blocks while editing.
+  (setq org-src-fontify-natively t)
+
+  ;; Make TAB act as if it were issued in a buffer of the language’s major mode.
+  (setq org-src-tab-acts-natively t)
+
+  ;; Allow export to markdown and beamer (for presentations).
+  (require 'ox-md)
+  (require 'ox-beamer)
+
+  ;; Babel languages
+  (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((R . t)
+       (org . t)
+       ;; (latex . t)
+       (emacs-lisp . t)
+       (screen . nil)
+       ;;(octave . t)
+       ;;(shell . t)
+       (matlab . t)
+       )
+     )
+
+  ;; References
+  (use-package org-ref
+    :ensure t
+    :config
+    (setq org-latex-prefer-user-labels t))
+
+  ;; Pandoc for org-mode
+  (use-package ox-pandoc
+    :ensure t)
+
+  ;; Auto-revert
+  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
+
+  ;; Syntax highlighting when exporting to LaTeX
+  (require 'ox-latex)
+  (add-to-list 'org-latex-packages-alist '("" "minted"))
+  (setq org-latex-listings 'minted)
+
+  ;; Allow =pdflatex= to use shell-commands
+  ;; This will allow it to use =pygments= as syntax highlighter for exports to PDF
+  (setq org-latex-pdf-process
+        '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+          "bibtex %b"
+          "biber %b"
+          "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+          "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+
+  ;; Highlight ipython block, you can add the following to your init file
+  (add-to-list 'org-latex-minted-langs '(ipython "python"))
+
+  ;; Inline images after evaluating source code
+  (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+
+  ;; When editing org-files with source-blocks, we want the source blocks to be themed as they would in their native mode.
+  (setq org-src-fontify-natively t
+        org-src-tab-acts-natively t
+        ;org-confirm-babel-evaluate nil
+        )
+
+  ;; Do not ask for code execution when exporting
+  ;(setq org-export-babel-evaluate nil)
+
+  ;;When editing a code snippet, use the current window rather than popping open a new one (which shows the same information).
+  ;(setq org-src-window-setup 'current-window)
+
+  ;; Keybindings for capture and agenda etc.
+  (global-set-key "\C-cl" 'org-store-link)
+  (global-set-key "\C-ca" 'org-agenda)
+  (global-set-key "\C-cc" 'org-capture)
+
+  ;; Inbox file for tasks
+  (setq org-inbox-file "~/Dropbox/Org/inbox.org")
+
+  ;; Agenda files
+  (setq org-agenda-files '("~/Dropbox/Org/home.org"
+                           "~/Dropbox/Org/work.org"
+                           "~/Dropbox/Org/freetime.org"))
+
+  ;; Mark when the task was dome
+  (setq org-log-done 'time)
+
+  ;; TODO keywords
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "NEXT(n)" "WAIT(w@/!)" "|" "DONE(d)" "CANCELED(c@)")))
+
+  ;; Org-capture templates
+  (setq org-capture-templates
+        '(("t" "Todo" entry (file org-inbox-file)
+           "* TODO %?\n %U\n")
+
+          ("r" "Research ideas" entry (file+headline "~/Dropbox/Org/resideas.org" "Research ideas")
+           "* %?\n")
+
+          ("m" "Media" entry (file+headline "~/Dropbox/Org/freetime.org" "Elokuvat ja videot")
+           "* %?\n")
+
+          ("n" "Notes" entry (file "~/Dropbox/Org/notes.org")
+           "* %?\n")
+
+          ("j" "Journal" entry (file+datetree "~/Dropbox/Org/journal.org" "Päiväkirja")
+           "* %?\n")
+          ))
+
+  ;; Org tags
+  (setq org-tag-alist (quote (("@office" . ?o)
+                              ("@home" . ?h)
+                              ("@freetime" . ?f)
+                              (:newline)
+                              ("WAITING" . ?W)
+                              ("CANCELLED" . ?C))))
+
+  (setq org-fast-tag-selection-single-key nil)
+
+  ;; To make sure that tasks with child tasks are not completed prematurely:
+  (setq org-enforce-todo-dependencies t)
+
+  ;; Archiving stuff
+  (setq org-archive-location "~/Dropbox/Org/Archive/archive.org::* From %s")
+
+  ;; Auto save org-files, so that we prevent the locking problem between computers
+  (add-hook 'auto-save-hook 'org-save-all-org-buffers)
+
+  ;; Org agenda custom commands
+  (setq org-agenda-custom-commands
+        '(("d" "Default Agenda View"
+           ((agenda "" ((org-agenda-span 'day)
+                        (org-deadline-warning-days 90)))
+            (todo "NEXT" ((org-agenda-overriding-header "Next to do")))
+            (todo "" ((org-agenda-files '("~/Dropbox/Org/inbox.org"))
+                      (org-agenda-overriding-header "To refile")))
+            (todo ""
+                  ((org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled 'deadline 'todo '("NEXT")))
+                   (org-agenda-overriding-header "Other to do")))
+            ))))
+
+  ;; Refile targets
+  (setq org-refile-targets '((org-agenda-files :maxlevel . 2)))
+
+  ;; Show calendar week in calendar
+  (setq calendar-week-start-day 1)
+
+  (setq calendar-intermonth-text
+        '(propertize
+          (format "%2d"
+                  (car
+                   (calendar-iso-from-absolute
+                    (calendar-absolute-from-gregorian (list month day year)))))
+          'font-lock-face 'font-lock-warning-face))
+
+  (setq calendar-intermonth-header
+        (propertize "CW"
+                    'font-lock-face 'font-lock-keyword-face))
+
+  ;(add-hook 'org-agenda-finalize-hook #'org-fit-window-to-buffer)
+#+END_SRC
+
+* AUCTeX
+#+BEGIN_SRC emacs-lisp
+  (use-package tex
+    :ensure auctex
+    :ensure company-auctex
+    ;; :defer t
+    :init
+    (add-hook 'LaTeX-mode-hook 'visual-line-mode)
+    (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+    (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
+    ;; Minted package produces errors without shell-escape
+    (add-hook 'TeX-mode-hook
+              (lambda ()
+                (setq TeX-command-extra-options "-shell-escape -synctex=1")
+                )
+              )
+    ;; (add-hook 'LaTeX-mode-hook 'auto-complete-mode)
+    (setq reftex-plug-into-AUCTeX t)
+    (setq Tex-auto-save t)
+    (setq TeX-parse-self t)
+    (setq-default TeX-master nil)
+    (add-to-list 'auto-mode-alist '("\\.tex$" . LaTeX-mode)); force LaTeX-mode
+    :config
+    ;; Update PDF buffers after successful LaTeX runs
+    (add-hook 'TeX-after-TeX-LaTeX-command-finished-hook
+              #'TeX-revert-document-buffer)
+    (setq TeX-view-program-selection '((output-pdf "pdf-tools"))
+          TeX-source-correlate-method 'synctex
+          TeX-source-correlate-start-server t)
+    (setq TeX-view-program-list '(("pdf-tools" "TeX-pdf-tools-sync-view")))
+    )
+
+  ;; Auto-completion for LaTeX
+  (use-package company-auctex
+    :ensure t
+    :config
+    (company-auctex-init)
+  )
+#+END_SRC
+* R and markdown
+
+
+#+BEGIN_SRC emacs-lisp
+
+  ;; ESS
+  (use-package ess
+    :ensure t
+    :defer 2
+    :config
+    (setq ess-smart-S-assign-key -1
+          ess-directory 'nil
+          ess-ask-for-ess-directory nil
+          ess-tab-complete-in-script t
+          ess-eldoc-show-on-symbol 'nil
+          ess-fancy-comments 'nil
+          comint-scroll-to-bottom-on-input t
+          comint-scroll-to-bottom-on-output t
+          comint-move-point-for-output t
+          ess-default-style 'RStudio
+          flycheck-lintr-linters "with_defaults(object_usage_linter = NULL)")
+    (setq ess-eval-visibly 'nowait)
+    (add-hook 'ess-R-post-run-hook 'ess-execute-screen-options))
+
+  ;; Buffer setup similar to Rstudio
+  (setq display-buffer-alist
+        `(("*R Dired"
+           (display-buffer-reuse-window display-buffer-in-side-window)
+           (side . right)
+           (slot . -1)
+           (window-width . 0.29)
+           (reusable-frames . nil))
+          ("*R"
+           (display-buffer-reuse-window display-buffer-at-bottom)
+           (window-width . 0.39)
+           (window-height . 0.35)
+           (reusable-frames . nil))
+          ("*Help"
+           (display-buffer-reuse-window display-buffer-in-side-window)
+           (side . right)
+           (slot . 1)
+           (window-width . 0.29)
+           (reusable-frames . nil))))
+
+  ;; Code highlighting via polymode
+  (use-package markdown-mode
+    :ensure t
+    :defer 2
+    :mode
+    (("README\\.md\\'" . gfm-mode)
+     ("\\.md\\'" . markdown-mode)
+     ("\\.markdown\\'" . markdown-mode))
+    ;:init
+    ;(setq markdown-command "markdown")
+    )
+
+  (use-package pandoc-mode
+    :config
+    (add-hook 'markdown-mode-hook 'pandoc-mode))
+
+
+  (use-package polymode
+    :ensure markdown-mode
+    :ensure poly-R
+    :ensure poly-noweb
+    :defer 2
+    :config
+    ;; R/tex polymodes
+    (add-to-list 'auto-mode-alist '("\\.Rnw" . poly-noweb+r-mode))
+    (add-to-list 'auto-mode-alist '("\\.rnw" . poly-noweb+r-mode))
+    (add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown+r-mode))
+    ;; org-mode poly (not working at the moment)
+    ;; (add-to-list 'auto-mode-alist '("\\.org" . poly-org-mode))
+    ;; Make sure r-mode is loaded
+    ;; (autoload 'r-mode "ess-site.el" "Major mode for editing R source." t)
+
+    ;; Add a chunk for rmarkdown
+    ;; Need to add a keyboard shortcut
+    ;; https://emacs.stackexchange.com/questions/27405/insert-code-chunk-in-r-markdown-with-yasnippet-and-polymode
+    ;; (defun insert-r-chunk (header)
+    ;;   "Insert an r-chunk in markdown mode. Necessary due to interactions between polymode and yas snippet"
+    ;;   (interactive "sHeader: ")
+    ;;   (insert (concat "```{r " header "}\n\n\n```"))
+    ;;   (forward-line -2))
+    ;; (define-key poly-markdown+r-mode-map (kbd "M-c") #'insert-r-chunk)
+    )
+
+  (use-package poly-markdown
+    :ensure polymode
+    :defer t
+    :config
+    ;; Wrap lines at column limit, but don't put hard returns in
+    (add-hook 'markdown-mode-hook (lambda () (visual-line-mode 1)))
+    ;; Flyspell on
+    ;(add-hook 'markdown-mode-hook (lambda () (flyspell-mode 1)))
+    )
+
+  ;; poly-R
+  (use-package poly-R
+    :ensure polymode
+    :ensure poly-markdown
+    :ensure poly-noweb
+    :defer t
+    :config
+    ;; Add a chunk for rmarkdown
+    ;; Need to add a keyboard shortcut
+    ;; https://emacs.stackexchange.com/questions/27405/insert-code-chunk-in-r-markdown-with-yasnippet-and-polymode
+    ;; (defun insert-r-chunk (header)
+    ;;   "Insert an r-chunk in markdown mode. Necessary due to interactions between polymode and yas snippet"
+    ;;   (interactive "sHeader: ")
+    ;;   (insert (concat "```{r " header "}\n\n\n```"))
+    ;;   (forward-line -2))
+    ;; (define-key poly-markdown+r-mode-map (kbd "M-c") #'insert-r-chunk)
+  )
+
+  ;; Extra syntax highlighting
+  (setq ess-R-font-lock-keywords
+        '((ess-R-fl-keyword:modifiers . t) ; default
+          (ess-R-fl-keyword:fun-defs . t) ; default
+          (ess-R-fl-keyword:keywords . t) ; default
+          (ess-R-fl-keyword:assign-ops . t) ; default
+          (ess-R-fl-keyword:constants . t) ; default
+          (ess-fl-keyword:fun-calls . t)
+          (ess-fl-keyword:numbers . nil)
+          (ess-fl-keyword:operators . nil)
+          (ess-fl-keyword:delimiters . nil)
+          (ess-fl-keyword:= . nil)
+          (ess-R-fl-keyword:F&T . nil)))
+#+END_SRC
+
+* Octave
+#+BEGIN_SRC emacs-lisp
+  ;;  (setq auto-mode-alist
+  ;;       (cons '("\\.m$" . octave-mode) auto-mode-alist))
+
+  ;; (add-hook 'octave-mode-hook
+  ;;           (lambda ()
+  ;;             (abbrev-mode 1)
+  ;;             (auto-fill-mode 1)
+  ;;             (if (eq window-system 'x)
+  ;;                 (font-lock-mode 1))
+  ;;             (progn (setq octave-comment-char ?%)
+  ;;                     (setq comment-start "% ")
+  ;;                     (setq comment-add 0))))
+#+END_SRC
+* Matlab
+#+BEGIN_SRC emacs-lisp
+  (use-package matlab-mode
+    :ensure t
+    :mode ("\\.m$" . matlab-mode)
+    :bind (:map matlab-shell-mode-map
+                ("C-c C-c" . term-interrupt-subjob))
+    :init
+    (setq matlab-shell-command "/Applications/MATLAB_R2019b.app/bin/matlab"
+          matlab-indent-function t)
+    (eval-after-load 'matlab
+      '(add-to-list 'matlab-shell-command-switches "-nosplash")))
+#+END_SRC
+* Elfeed
+
+#+BEGIN_SRC emacs-lisp
+  ;; Elfeed
+
+  ;; functions to support syncing .elfeed between machines makes sure elfeed reads index from disk before launching
+  (defun bjm/elfeed-load-db-and-open ()
+    "Wrapper to load the elfeed db from disk before opening."
+    (interactive)
+    (elfeed-db-load)
+    (elfeed)
+    (elfeed-search-update--force))
+
+  ;; write to disk when quiting
+  (defun bjm/elfeed-save-db-and-bury ()
+    "Wrapper to save the elfeed db to disk before burying buffer."
+    (interactive)
+    (elfeed-db-save)
+    (quit-window))
+
+  ;; Mark all posts as read
+  (defun elfeed-mark-all-as-read ()
+    (interactive)
+    (mark-whole-buffer)
+    (elfeed-search-untag-all-unread))
+
+  ;; linking and capturing
+  (defun elfeed-link-title (entry)
+    "Copy the entry title and URL as org link to the clipboard."
+    (interactive)
+    (let* ((link (elfeed-entry-link entry))
+           (title (elfeed-entry-title entry))
+           (titlelink (concat "[[" link "][" title "]]")))
+      (when titlelink
+        (kill-new titlelink)
+        (x-set-selection 'PRIMARY titlelink)
+        (message "Yanked: %s" titlelink))))
+
+  ;; show mode
+  (defun elfeed-show-link-title ()
+    "Copy the current entry title and URL as org link to the clipboard."
+    (interactive)
+    (elfeed-link-title elfeed-show-entry))
+
+  (defun elfeed-show-quick-url-note ()
+    "Fastest way to capture entry link to org agenda from elfeed show mode"
+    (interactive)
+    (elfeed-link-title elfeed-show-entry)
+    (org-capture nil "n")
+    (yank)
+    (org-capture-finalize))
+
+  ;; search mode
+  (defun elfeed-search-link-title ()
+    "Copy the current entry title and URL as org link to the clipboard."
+    (interactive)
+    (let ((entries (elfeed-search-selected)))
+      (cl-loop for entry in entries
+               when (elfeed-entry-link entry)
+               do (elfeed-link-title entry))))
+
+  (defun elfeed-search-quick-url-note ()
+    "In search mode, capture the title and link for the selected
+         entry or entries in org aganda."
+    (interactive)
+    (let ((entries (elfeed-search-selected)))
+      (cl-loop for entry in entries
+               do (elfeed-untag entry 'unread)
+               when (elfeed-entry-link entry)
+               do (elfeed-link-title entry)
+               do (org-capture nil "n")
+               do (yank)
+               do (org-capture-finalize)
+               (mapc #'elfeed-search-update-entry entries))
+      (unless (use-region-p) (forward-line))))
+
+  (use-package elfeed
+    :ensure t
+    ;; :bind (:map elfeed-search-mode-map
+    ;;             ("q" . bjm/elfeed-save-db-and-bury)
+    ;;             ("Q" . bjm/elfeed-save-db-and-bury)
+    ;;             ("m" . elfeed-toggle-star)
+    ;;             ("M" . elfeed-toggle-star))
+    :init
+    (setq my/default-elfeed-search-filter "@1-month-ago +unread")
+    (setq-default elfeed-search-filter my/default-elfeed-search-filter)
+    :custom
+    (shr-width 80)
+    (shr-max-image-proportion 0.2)
+    :config
+    (setq elfeed-search-title-max-width 80)
+    (setq elfeed-search-title-min-width 80)
+  )
+
+  (define-key elfeed-show-mode-map (kbd "l") 'elfeed-show-link-title)
+  (define-key elfeed-show-mode-map (kbd "v") 'elfeed-show-quick-url-note)
+
+  (define-key elfeed-search-mode-map (kbd "R") 'elfeed-mark-all-as-read)
+  (define-key elfeed-search-mode-map (kbd "q") 'bjm/elfeed-save-db-and-bury)
+  (define-key elfeed-search-mode-map (kbd "Q") 'bjm/elfeed-save-db-and-bury)
+  (define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star)
+  (define-key elfeed-search-mode-map (kbd "M") 'elfeed-toggle-star)
+  (define-key elfeed-search-mode-map (kbd "l") 'elfeed-search-link-title)
+  (define-key elfeed-search-mode-map (kbd "v") 'elfeed-search-quick-url-note)
+
+  (setq elfeed-use-curl t)
+  (setq elfeed-db-directory "~/Dropbox/Org/elfeed/elfeeddb")
+  (load "~/Dropbox/Org/elfeed/elfeed-feeds.el")
+
+  ;; Configure the Elfeed RSS reader with an Orgmode file
+  ;; (use-package elfeed-org
+  ;;   :ensure t
+  ;;   :config
+  ;;   (elfeed-org)
+  ;;   (setq rmh-elfeed-org-files (list "~/Dropbox/Org/elfeed/elfeed.org")))
+
+  ;; Various bits and pieces to enhance the Elfeed user experience.
+  (use-package elfeed-goodies
+    :ensure t
+    :config
+    (elfeed-goodies/setup))
+
+  ;; (setq elfeed-feeds
+  ;; '("http://nullprogram.com/feed/"
+  ;;   "http://planet.emacsen.org/atom.xml"))
+#+END_SRC
+* Custom key bindings
+
+#+BEGIN_SRC emacs-lisp
+  ;; Unbind C-z
+  (global-unset-key (kbd "C-z"))
+
+  ;; I keep a custom-bindings-map that holds all my custom bindings. This map can be activated by toggling a simple minor-mode that does nothing more than activating the map. This inhibits other major-modes to override these bindings. I keep this at the end of the init-file to make sure that all functions are actually defined.
+  (defvar custom-bindings-map (make-keymap)
+    "A keymap for custom bindings.")
+
+  ;; Bindings for define-word
+  (define-key custom-bindings-map (kbd "C-c M-d") 'define-word-at-point)
+
+  ;; Change flyspell dictionary to Finnish / English
+  (global-set-key (kbd "C-c F")
+                  (lambda()(interactive)
+                    (ispell-change-dictionary "finnish")
+                    (flyspell-buffer)))
+
+  (global-set-key (kbd "C-c E")
+                  (lambda()(interactive)
+                    (ispell-change-dictionary "english")
+                    (flyspell-buffer)))
+
+  ;; Define the minor mode
+  (define-minor-mode custom-bindings-mode
+    "A mode that activates custom-bindings."
+    t nil custom-bindings-map)
+#+END_SRC
