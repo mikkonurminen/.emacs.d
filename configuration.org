@@ -519,7 +519,21 @@ Configure various UI related things
     (setq git-commit-summary-max-length 50)
     (setq magit-diff-options '("-b")) ; ignore whitespace
     )
+
+  ;; Kill magit buffers when done
+  (defun mu-magit-kill-buffers ()
+    "Restore window configuration and kill all Magit buffers."
+    (interactive)
+    (let ((buffers (magit-mode-get-buffers)))
+      (magit-restore-window-configuration)
+      (mapc #'kill-buffer buffers)))
+
+  (bind-key "q" #'mu-magit-kill-buffers magit-status-mode-map)
 #+END_SRC
+
+#+RESULTS:
+: mu-magit-kill-buffers
+
 * PDF
 
 #+BEGIN_SRC emacs-lisp
