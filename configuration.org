@@ -366,6 +366,20 @@ Configure various UI related things
                                           ;(add-hook 'pdf-view-mode-hook '(lambda()
                                           ;                                (define-key pdf-view-mode-map "C-s" 'isearch-forward)))
 
+  ;; Project management
+  (use-package projectile
+    :ensure t
+    :config
+    (projectile-mode +1)
+    (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+
+  (setq projectile-completion-system 'ivy)
+
+  (use-package counsel-projectile
+    :ensure t
+    :config
+    (add-hook 'after-init-hook 'counsel-projectile-mode))
+
   ;; Icons (need to use M-x all-the-icons-install-fonts first time)
   (use-package all-the-icons
     :ensure t
