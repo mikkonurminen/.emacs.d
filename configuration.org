@@ -984,6 +984,17 @@ Configure various UI related things
     (eval-after-load 'matlab
       '(add-to-list 'matlab-shell-command-switches "-nosplash")))
 #+END_SRC
+* Python
+#+BEGIN_SRC emacs-lisp
+  (use-package elpy
+    :ensure t
+    :init
+    (elpy-enable)
+    :config
+    (setq python-shell-interpreter "ipython"
+          python-shell-interpreter-args "--simple-prompt -c exec('__import__(\\'readline\\')') -i")
+    )
+#+END_SRC
 * Elfeed
 
 #+BEGIN_SRC emacs-lisp
