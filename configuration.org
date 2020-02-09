@@ -1,3 +1,5 @@
+#+OPTIONS: results:nil
+
 * Configuration for use-package
 
 Ensure that use-package installs packages if not already installed. Always compile and use the newest package available.
@@ -272,6 +274,12 @@ Configure various UI related things
     :init (dumb-jump-mode)
     :ensure)
 
+  (use-package ace-jump-mode
+    :bind
+    ("C-c SPC" . ace-jump-mode)
+    ("C-c u SPC" . ace-jump-mode-pop-mark)
+    ("C-c C-SPC" . ace-jump-line-mode))
+
   ;; Export to html
   (use-package htmlize
     :ensure t
@@ -524,9 +532,6 @@ Configure various UI related things
         (remove 'eshell-handle-ansi-color eshell-output-filter-functions))
 #+END_SRC
 
-#+RESULTS:
-| eshell-postoutput-scroll-to-bottom | eshell-handle-control-codes | eshell-watch-for-password-prompt |
-
 * Magit
 
 #+BEGIN_SRC emacs-lisp
@@ -562,9 +567,6 @@ Configure various UI related things
                         #'kill-magit-diff-buffer-in-current-repo
                         nil t))) ; the t is important
 #+END_SRC
-
-#+RESULTS:
-: mu-magit-kill-buffers
 
 * PDF
 
