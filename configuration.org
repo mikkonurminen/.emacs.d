@@ -164,6 +164,14 @@ Configure various UI related things
   (setq-default indent-tabs-mode nil)
   (setq-default tab-width 2)
 
+  ;; Aggressive (auto) indent
+  (use-package aggressive-indent
+    :ensure t
+    :config
+    (global-aggressive-indent-mode 1)
+    ;;(add-to-list 'aggressive-indent-excluded-modes 'html-mode)
+    )
+
   ;; Show column numbers and line numbers
   (setq-default column-number-mode t)
   (global-display-line-numbers-mode)
@@ -210,9 +218,6 @@ Configure various UI related things
                                 (when (not (or (derived-mode-p 'markdown-mode)))
                                   (delete-trailing-whitespace))))
 #+END_SRC
-
-#+RESULTS:
-| lambda | nil | (when (not (or (derived-mode-p (quote markdown-mode)))) (delete-trailing-whitespace)) |
 
 * General packages
 
@@ -576,12 +581,12 @@ Configure various UI related things
     :ensure t
     :mode ("\\.pdf\\'" . pdf-view-mode)
     :bind ("C-c C-g" . pdf-sync-forward-search)
-    :bind (:map pdf-view-mode-map
-                ("j" . image-next-line)
-                ("k" . image-previous-line)
-                ("l" . image-forward-hscroll)
-                ("h" . image-backward-hscroll)
-                ("G" . pdf-view-last-page))
+    ;; :bind (:map pdf-view-mode-map
+    ;;             ("j" . image-next-line)
+    ;;             ("k" . image-previous-line)
+    ;;             ("l" . image-forward-hscroll)
+    ;;             ("h" . image-backward-hscroll)
+    ;;             ("G" . pdf-view-last-page))
     :config
     (custom-set-variables
      '(pdf-tools-handle-upgrades nil)) ; Use brew upgrade pdf-tools instead.
@@ -595,7 +600,9 @@ Configure various UI related things
     (define-key pdf-view-mode-map (kbd "h") 'pdf-annot-add-highlight-markup-annotation)
     (define-key pdf-view-mode-map (kbd "t") 'pdf-annot-add-text-annotation)
     (define-key pdf-view-mode-map (kbd "D") 'pdf-annot-delete)
-    (pdf-tools-install))
+    (define-key pdf-view-mode-map (kbd "C-f") 'image-forward-hscroll)
+    (define-key pdf-view-mode-map (kbd "C-b") 'image-backward-hscroll)
+    (pdf-tools-install :no-query))
   (add-hook 'pdf-view-mode-hook (lambda() (linum-mode -1))) ;; linum-mode may slow pdf viewing
   ; auto-revert currently does not work
   ;(add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
@@ -613,8 +620,6 @@ Configure various UI related things
     :after pdf-tools
     :config
     (add-hook 'pdf-view-mode-hook 'pdf-view-restore-mode))
-
-
 
 #+END_SRC
 
