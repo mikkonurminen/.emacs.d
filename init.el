@@ -19,10 +19,10 @@
 ;; (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 ;; (package-initialize)
 
-;; ;; Ensure that use-package is installed
-;; (when (not (package-installed-p 'use-package))
-;;   (package-refresh-contents)
-;;   (package-install 'use-package))
+;; Ensure that use-package is installed
+(when (not (package-installed-p 'use-package))
+  (package-refresh-contents)
+  (package-install 'use-package))
 
 ;; (org-babel-load-file "~/.emacs.d/configuration.org")
 
